@@ -16,13 +16,13 @@ export const metadata: Metadata = {
   title: "Ebook Marketplace | Buy & Sell Ebooks on Base & Celo",
   description: "A decentralized marketplace for ebooks. Buy and sell PDF ebooks using USDC on Base or cUSD on Celo.",
   icons: {
-    icon: "/logo.png",
-    apple: "/logo.png",
+    icon: "/logo.jpg",
+    apple: "/logo.jpg",
   },
   openGraph: {
     title: "Ebook Marketplace",
     description: "Buy & sell ebooks on Base and Celo chains",
-    images: ["/logo.png"],
+    images: ["/logo.jpg"],
   },
   other: {
     "fc:frame": "vNext",

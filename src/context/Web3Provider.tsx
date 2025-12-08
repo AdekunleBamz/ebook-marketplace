@@ -15,7 +15,7 @@ const metadata = {
   name: 'Ebook Marketplace',
   description: 'A decentralized marketplace for ebooks on Base and Celo',
   url: 'https://ebook-marketplace.vercel.app',
-  icons: ['/logo.png']
+  icons: ['/logo.jpg']
 }
 
 // Create modal instance

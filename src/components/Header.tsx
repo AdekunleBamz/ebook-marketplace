@@ -26,7 +26,7 @@ export default function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 shrink-0">
             <Image
-              src="/logo.png"
+              src="/logo.jpg"
               alt="Ebook Marketplace"
               width={45}
               height={45}
