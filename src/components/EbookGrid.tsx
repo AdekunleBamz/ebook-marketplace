@@ -24,7 +24,7 @@ const ERC20_ABI = [
 ] as const
 
 export default function EbookGrid() {
-  const { ebooks, selectedGenre } = useMarketplace()
+  const { ebooks, selectedGenre, isLoading } = useMarketplace()
   const { isConnected, address } = useAppKitAccount()
   const { chainId } = useAppKitNetwork()
   const [purchasingId, setPurchasingId] = useState<string | null>(null)
@@ -41,6 +41,17 @@ export default function EbookGrid() {
   const currentGenre = GENRES.find(g => g.value === selectedGenre)
   const genreTitle = selectedGenre === 'all' ? 'All Books' : currentGenre?.label || 'Books'
   const genreIcon = selectedGenre === 'all' ? '📚' : currentGenre?.icon || '📖'
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 p-3 sm:p-6 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading ebooks...</p>
+        </div>
+      </div>
+    )
+  }
 
   const handleDownload = (ebook: Ebook) => {
     // Check if it's a valid data URL or regular URL

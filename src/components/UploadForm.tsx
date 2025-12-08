@@ -122,7 +122,7 @@ By signing this message, I confirm that I have the rights to sell this ebook.`
       const pdfBase64 = await fileToBase64(pdfFile)
       const coverBase64 = coverFile ? await fileToBase64(coverFile) : ''
 
-      addEbook({
+      const success = await addEbook({
         title: formData.title,
         author: formData.author,
         description: formData.description,
@@ -135,6 +135,11 @@ By signing this message, I confirm that I have the rights to sell this ebook.`
         isFree: formData.isFree,
         fileSize: pdfFile.size
       })
+
+      if (!success) {
+        setError('Failed to save ebook to database. Please try again.')
+        return
+      }
 
       setUploadSuccess(true)
       setFormData({

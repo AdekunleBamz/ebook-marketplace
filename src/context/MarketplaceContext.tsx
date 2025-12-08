@@ -1,17 +1,20 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
 import { Ebook, Genre } from '@/types'
+import { supabase } from '@/lib/supabase'
 import { v4 as uuidv4 } from 'uuid'
 
 interface MarketplaceContextType {
   ebooks: Ebook[]
-  addEbook: (ebook: Omit<Ebook, 'id' | 'uploadedAt'>) => void
+  addEbook: (ebook: Omit<Ebook, 'id' | 'uploadedAt'>) => Promise<boolean>
   getEbooksByGenre: (genre: Genre) => Ebook[]
   getFreeEbooks: () => Ebook[]
   searchEbooks: (query: string) => Ebook[]
   selectedGenre: Genre | 'all'
   setSelectedGenre: (genre: Genre | 'all') => void
+  isLoading: boolean
+  refreshEbooks: () => Promise<void>
 }
 
 const MarketplaceContext = createContext<MarketplaceContextType | undefined>(undefined)
@@ -19,60 +22,109 @@ const MarketplaceContext = createContext<MarketplaceContextType | undefined>(und
 export function MarketplaceProvider({ children }: { children: ReactNode }) {
   const [ebooks, setEbooks] = useState<Ebook[]>([])
   const [selectedGenre, setSelectedGenre] = useState<Genre | 'all'>('all')
+  const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    // Clear old demo data and load fresh ebooks
-    const stored = localStorage.getItem('ebooks')
-    const version = localStorage.getItem('ebooks_version')
-    
-    // Version 2: Production release - clear demo data
-    if (version !== '2') {
-      localStorage.removeItem('ebooks')
-      localStorage.setItem('ebooks_version', '2')
-      setEbooks([])
-    } else if (stored) {
-      try {
-        const parsed = JSON.parse(stored)
-        // Filter out any demo ebooks (those with sample seller addresses)
-        const realEbooks = parsed.filter((e: Ebook) => 
-          e.seller && !e.seller.includes('...')
-        )
-        setEbooks(realEbooks)
-      } catch {
-        setEbooks([])
+  const fetchEbooks = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('ebooks')
+        .select('*')
+        .order('uploaded_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching ebooks:', error)
+        setIsLoading(false)
+        return
       }
+
+      if (data) {
+        const formattedEbooks: Ebook[] = data.map(record => ({
+          id: record.id,
+          title: record.title,
+          author: record.author,
+          description: record.description,
+          genre: record.genre as Genre,
+          price: record.price,
+          chain: record.chain as 'base' | 'celo',
+          coverImage: record.cover_image || '',
+          pdfUrl: record.pdf_url,
+          seller: record.seller,
+          isFree: record.is_free,
+          fileSize: record.file_size,
+          uploadedAt: new Date(record.uploaded_at).getTime()
+        }))
+        setEbooks(formattedEbooks)
+      }
+    } catch (err) {
+      console.error('Failed to fetch ebooks:', err)
+    } finally {
+      setIsLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    // Save to localStorage with error handling
-    try {
-      const dataToStore = JSON.stringify(ebooks)
-      // Check if data is too large (rough estimate: 4MB limit for safety)
-      if (dataToStore.length > 4 * 1024 * 1024) {
-        console.warn('Ebook data too large for localStorage, storing metadata only')
-        // Store only metadata without file data
-        const metadataOnly = ebooks.map(e => ({
-          ...e,
-          pdfUrl: e.pdfUrl.startsWith('data:') ? 'FILE_TOO_LARGE' : e.pdfUrl,
-          coverImage: e.coverImage.startsWith('data:') && e.coverImage.length > 100000 ? '' : e.coverImage
-        }))
-        localStorage.setItem('ebooks', JSON.stringify(metadataOnly))
-      } else {
-        localStorage.setItem('ebooks', dataToStore)
-      }
-    } catch (err) {
-      console.error('Failed to save to localStorage:', err)
-    }
-  }, [ebooks])
+    fetchEbooks()
+  }, [fetchEbooks])
 
-  const addEbook = (ebook: Omit<Ebook, 'id' | 'uploadedAt'>) => {
-    const newEbook: Ebook = {
-      ...ebook,
-      id: uuidv4(),
-      uploadedAt: Date.now()
+  useEffect(() => {
+    const channel = supabase
+      .channel('ebooks_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'ebooks' },
+        () => {
+          fetchEbooks()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
     }
-    setEbooks(prev => [newEbook, ...prev])
+  }, [fetchEbooks])
+
+  const addEbook = async (ebook: Omit<Ebook, 'id' | 'uploadedAt'>): Promise<boolean> => {
+    const id = uuidv4()
+    const uploadedAt = new Date().toISOString()
+
+    try {
+      const { error } = await supabase.from('ebooks').insert({
+        id,
+        title: ebook.title,
+        author: ebook.author,
+        description: ebook.description,
+        genre: ebook.genre,
+        price: ebook.price,
+        chain: ebook.chain,
+        cover_image: ebook.coverImage,
+        pdf_url: ebook.pdfUrl,
+        seller: ebook.seller,
+        is_free: ebook.isFree,
+        file_size: ebook.fileSize,
+        uploaded_at: uploadedAt
+      })
+
+      if (error) {
+        console.error('Error adding ebook:', error)
+        return false
+      }
+
+      const newEbook: Ebook = {
+        ...ebook,
+        id,
+        uploadedAt: new Date(uploadedAt).getTime()
+      }
+      setEbooks(prev => [newEbook, ...prev])
+      return true
+    } catch (err) {
+      console.error('Failed to add ebook:', err)
+      return false
+    }
+  }
+
+  const refreshEbooks = async () => {
+    setIsLoading(true)
+    await fetchEbooks()
   }
 
   const getEbooksByGenre = (genre: Genre) => {
@@ -102,7 +154,9 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
         getFreeEbooks,
         searchEbooks,
         selectedGenre,
-        setSelectedGenre
+        setSelectedGenre,
+        isLoading,
+        refreshEbooks
       }}
     >
       {children}
