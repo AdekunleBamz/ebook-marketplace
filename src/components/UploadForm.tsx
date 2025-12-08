@@ -4,13 +4,15 @@ import { useState } from 'react'
 import { useMarketplace } from '@/context/MarketplaceContext'
 import { GENRES, Genre, MAX_FILE_SIZE } from '@/types'
 import { useAppKitAccount, useAppKitNetwork } from '@reown/appkit/react'
-import { Upload, FileText, X, CheckCircle } from 'lucide-react'
+import { useSignMessage } from 'wagmi'
+import { Upload, FileText, X, CheckCircle, Shield } from 'lucide-react'
 import { CHAIN_IDS } from '@/types'
 
 export default function UploadForm() {
   const { addEbook } = useMarketplace()
   const { isConnected, address } = useAppKitAccount()
   const { chainId } = useAppKitNetwork()
+  const { signMessageAsync } = useSignMessage()
   
   const [formData, setFormData] = useState({
     title: '',
@@ -23,8 +25,10 @@ export default function UploadForm() {
   const [pdfFile, setPdfFile] = useState<File | null>(null)
   const [coverFile, setCoverFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
+  const [isSigning, setIsSigning] = useState(false)
   const [uploadSuccess, setUploadSuccess] = useState(false)
   const [error, setError] = useState('')
+  const [signature, setSignature] = useState<string | null>(null)
 
   const currentChain = chainId === CHAIN_IDS.base ? 'base' : chainId === CHAIN_IDS.celo ? 'celo' : null
 
@@ -80,11 +84,29 @@ export default function UploadForm() {
       return
     }
 
-    setIsUploading(true)
+    setIsSigning(true)
+    setError('')
 
     try {
+      // Create a message for the author to sign
+      const timestamp = Date.now()
+      const message = `I am listing "${formData.title}" by ${formData.author} on Ebook Marketplace.
+
+Price: ${formData.isFree ? 'Free' : `${formData.price} ${currentChain === 'base' ? 'USDC' : 'cUSD'}`}
+Chain: ${currentChain === 'base' ? 'Base' : 'Celo'}
+Timestamp: ${timestamp}
+Seller: ${address}
+
+By signing this message, I confirm that I have the rights to sell this ebook.`
+
+      // Request signature from wallet
+      const sig = await signMessageAsync({ message })
+      setSignature(sig)
+      setIsSigning(false)
+      setIsUploading(true)
+
       // Upload processing
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      await new Promise(resolve => setTimeout(resolve, 1000))
 
       addEbook({
         title: formData.title,
@@ -94,7 +116,7 @@ export default function UploadForm() {
         price: formData.isFree ? '0' : formData.price,
         chain: currentChain,
         coverImage: coverFile ? URL.createObjectURL(coverFile) : '',
-        pdfUrl: URL.createObjectURL(pdfFile), // In production: IPFS URL
+        pdfUrl: URL.createObjectURL(pdfFile),
         seller: address || '',
         isFree: formData.isFree,
         fileSize: pdfFile.size
@@ -111,11 +133,19 @@ export default function UploadForm() {
       })
       setPdfFile(null)
       setCoverFile(null)
+      setSignature(null)
 
       setTimeout(() => setUploadSuccess(false), 3000)
-    } catch (err) {
-      setError('Failed to upload ebook. Please try again.')
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+      if (errorMessage.includes('rejected') || errorMessage.includes('denied')) {
+        setError('Signature rejected. Please sign the message to list your ebook.')
+      } else {
+        setError('Failed to upload ebook. Please try again.')
+      }
+      setSignature(null)
     } finally {
+      setIsSigning(false)
       setIsUploading(false)
     }
   }
@@ -327,23 +357,34 @@ export default function UploadForm() {
           </div>
 
           {/* Submit */}
-          <button
-            type="submit"
-            disabled={!isConnected || isUploading}
-            className="w-full bg-gradient-to-r from-teal-600 to-amber-500 hover:from-teal-500 hover:to-amber-400 disabled:from-gray-600 disabled:to-gray-700 text-white py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2"
-          >
-            {isUploading ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Uploading...
-              </>
-            ) : (
-              <>
-                <Upload size={18} />
-                List Ebook
-              </>
-            )}
-          </button>
+          <div className="space-y-3">
+            <button
+              type="submit"
+              disabled={!isConnected || isUploading || isSigning}
+              className="w-full bg-gradient-to-r from-teal-600 to-amber-500 hover:from-teal-500 hover:to-amber-400 disabled:from-gray-600 disabled:to-gray-700 text-white py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2"
+            >
+              {isSigning ? (
+                <>
+                  <Shield size={18} className="animate-pulse" />
+                  Sign in Wallet...
+                </>
+              ) : isUploading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Upload size={18} />
+                  Sign & List Ebook
+                </>
+              )}
+            </button>
+            <p className="text-xs text-gray-500 text-center flex items-center justify-center gap-1">
+              <Shield size={12} />
+              You&apos;ll be asked to sign a message to verify ownership
+            </p>
+          </div>
         </form>
       </div>
     </div>
