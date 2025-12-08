@@ -2,11 +2,14 @@
 
 import { useState } from 'react'
 import { useMarketplace } from '@/context/MarketplaceContext'
-import { GENRES, Genre, MAX_FILE_SIZE } from '@/types'
+import { GENRES, Genre } from '@/types'
 import { useAppKitAccount, useAppKitNetwork } from '@reown/appkit/react'
 import { useSignMessage } from 'wagmi'
 import { Upload, FileText, X, CheckCircle, Shield } from 'lucide-react'
 import { CHAIN_IDS } from '@/types'
+
+// Max file size: 5MB for localStorage compatibility
+const MAX_FILE_SIZE = 5 * 1024 * 1024
 
 // Helper function to convert file to base64 data URL
 const fileToBase64 = (file: File): Promise<string> => {
@@ -50,7 +53,7 @@ export default function UploadForm() {
         return
       }
       if (file.size > MAX_FILE_SIZE) {
-        setError('File size must be less than 50MB')
+        setError('File size must be less than 5MB for now')
         return
       }
       setPdfFile(file)
@@ -148,11 +151,14 @@ By signing this message, I confirm that I have the rights to sell this ebook.`
 
       setTimeout(() => setUploadSuccess(false), 3000)
     } catch (err: unknown) {
+      console.error('Upload error:', err)
       const errorMessage = err instanceof Error ? err.message : 'Unknown error'
       if (errorMessage.includes('rejected') || errorMessage.includes('denied')) {
         setError('Signature rejected. Please sign the message to list your ebook.')
+      } else if (errorMessage.includes('quota') || errorMessage.includes('storage')) {
+        setError('Storage limit reached. Please try a smaller file (max 5MB).')
       } else {
-        setError('Failed to upload ebook. Please try again.')
+        setError(`Failed to upload: ${errorMessage}`)
       }
       setSignature(null)
     } finally {

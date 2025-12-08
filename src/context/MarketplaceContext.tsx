@@ -45,8 +45,25 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    // Save to localStorage
-    localStorage.setItem('ebooks', JSON.stringify(ebooks))
+    // Save to localStorage with error handling
+    try {
+      const dataToStore = JSON.stringify(ebooks)
+      // Check if data is too large (rough estimate: 4MB limit for safety)
+      if (dataToStore.length > 4 * 1024 * 1024) {
+        console.warn('Ebook data too large for localStorage, storing metadata only')
+        // Store only metadata without file data
+        const metadataOnly = ebooks.map(e => ({
+          ...e,
+          pdfUrl: e.pdfUrl.startsWith('data:') ? 'FILE_TOO_LARGE' : e.pdfUrl,
+          coverImage: e.coverImage.startsWith('data:') && e.coverImage.length > 100000 ? '' : e.coverImage
+        }))
+        localStorage.setItem('ebooks', JSON.stringify(metadataOnly))
+      } else {
+        localStorage.setItem('ebooks', dataToStore)
+      }
+    } catch (err) {
+      console.error('Failed to save to localStorage:', err)
+    }
   }, [ebooks])
 
   const addEbook = (ebook: Omit<Ebook, 'id' | 'uploadedAt'>) => {
