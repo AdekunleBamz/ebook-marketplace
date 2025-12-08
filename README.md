@@ -1,36 +1,135 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ebook Marketplace - Farcaster MiniApp
+
+A decentralized marketplace for ebooks on Base and Celo chains. Authors can upload their PDF ebooks and list them for sale in USDC (Base) or cUSD (Celo).
+
+![Ebook Marketplace Logo](public/logo.png)
+
+## Features
+
+- 📚 **Browse by Genre**: Fiction, Non-Fiction, Finance, Crypto, Travel, Adventure, Romance, Mystery, Sci-Fi, Biography, Self-Help, Technology
+- 🎁 **Free Books Section**: Authors can offer books for free
+- 💰 **Multi-Chain Support**: Pay with USDC on Base or cUSD on Celo
+- 📤 **Easy Upload**: Authors can easily list their ebooks
+- 🔗 **Wallet Integration**: Powered by Reown AppKit (formerly WalletConnect)
+- 🖼️ **Farcaster Frame**: Works as a Farcaster miniApp
+
+## Tech Stack
+
+- **Framework**: Next.js 14 (App Router)
+- **Styling**: Tailwind CSS
+- **Wallet**: Reown AppKit + Wagmi
+- **Chains**: Base & Celo
+- **Payments**: USDC (Base) / cUSD (Celo)
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js 18+
+- npm or yarn
+- A Reown Project ID (get one at [cloud.reown.com](https://cloud.reown.com))
+
+### Installation
+
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cd ebook-marketplace
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies:
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Set up environment variables:
+```bash
+cp .env.example .env.local
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Add your Reown Project ID to `.env.local`:
+```
+NEXT_PUBLIC_REOWN_PROJECT_ID=your_project_id_here
+NEXT_PUBLIC_URL=http://localhost:3000
+```
 
-## Learn More
+5. Add your logo:
+   - Place your logo file as `public/logo.png`
+   - Create an OG image as `public/og-image.png` (1200x630px recommended)
 
-To learn more about Next.js, take a look at the following resources:
+6. Run the development server:
+```bash
+npm run dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+7. Open [http://localhost:3000](http://localhost:3000)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project Structure
 
-## Deploy on Vercel
+```
+src/
+├── app/
+│   ├── page.tsx          # Homepage with ebook grid
+│   ├── browse/page.tsx   # Browse page
+│   ├── upload/page.tsx   # Upload/sell page
+│   ├── layout.tsx        # Root layout with providers
+│   └── globals.css       # Global styles
+├── components/
+│   ├── Header.tsx        # Navigation header
+│   ├── GenreSidebar.tsx  # Genre filter sidebar
+│   ├── EbookCard.tsx     # Individual book card
+│   ├── EbookGrid.tsx     # Books grid display
+│   ├── UploadForm.tsx    # Ebook upload form
+│   └── ConnectButton.tsx # Wallet connect button
+├── context/
+│   ├── Web3Provider.tsx      # Reown AppKit setup
+│   └── MarketplaceContext.tsx # App state management
+├── config/
+│   └── wagmi.ts          # Wagmi configuration
+└── types/
+    └── index.ts          # TypeScript types & constants
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Supported Tokens
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Chain | Token | Address |
+|-------|-------|---------|
+| Base | USDC | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
+| Celo | cUSD | `0x765DE816845861e75A25fCA122bb6898B8B1282a` |
+
+## File Size Limit
+
+- Maximum ebook size: **50MB**
+- Supported format: **PDF only**
+
+## Farcaster Integration
+
+This app is designed to work as a Farcaster miniApp/Frame. The manifest is located at:
+```
+public/.well-known/farcaster.json
+```
+
+Update the URLs in the manifest before deploying to production.
+
+## Deployment
+
+### Vercel (Recommended)
+
+1. Push to GitHub
+2. Import to Vercel
+3. Add environment variables
+4. Deploy
+
+### Environment Variables for Production
+
+```
+NEXT_PUBLIC_REOWN_PROJECT_ID=your_production_project_id
+NEXT_PUBLIC_URL=https://your-domain.com
+```
+
+## License
+
+MIT
+
+## Contributing
+
+Contributions are welcome! Please open an issue or PR.

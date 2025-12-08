@@ -4,7 +4,7 @@ import Header from '@/components/Header'
 import GenreSidebar from '@/components/GenreSidebar'
 import EbookGrid from '@/components/EbookGrid'
 
-export default function Home() {
+export default function BrowsePage() {
   return (
     <div className="min-h-screen bg-[#0a0a14]">
       {/* Background Pattern */}

@@ -1,0 +1,18 @@
+{
+  "accountAssociation": {
+    "header": "",
+    "payload": "",
+    "signature": ""
+  },
+  "frame": {
+    "version": "1",
+    "name": "Ebook Marketplace",
+    "iconUrl": "https://ebook-marketplace.vercel.app/logo.png",
+    "homeUrl": "https://ebook-marketplace.vercel.app",
+    "imageUrl": "https://ebook-marketplace.vercel.app/og-image.png",
+    "buttonTitle": "Browse Books",
+    "splashImageUrl": "https://ebook-marketplace.vercel.app/logo.png",
+    "splashBackgroundColor": "#0a0a14",
+    "webhookUrl": ""
+  }
+}
