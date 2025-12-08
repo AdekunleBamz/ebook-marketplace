@@ -34,17 +34,25 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Ebook Marketplace",
     description: "Buy & sell ebooks on Base and Celo chains",
-    images: ["/logo.jpg"],
+    images: [`${appUrl}/logo.jpg`],
+    url: appUrl,
   },
   other: {
-    "fc:frame": "vNext",
-    "fc:frame:image": `${appUrl}/logo.jpg`,
-    "fc:frame:button:1": "Browse Books",
-    "fc:frame:button:1:action": "link",
-    "fc:frame:button:1:target": appUrl,
-    "fc:frame:button:2": "Sell Your Ebook",
-    "fc:frame:button:2:action": "link",
-    "fc:frame:button:2:target": `${appUrl}/upload`,
+    // Farcaster Frame embed meta tags
+    "fc:frame": JSON.stringify({
+      version: "next",
+      imageUrl: `${appUrl}/logo.jpg`,
+      button: {
+        title: "Browse Books",
+        action: {
+          type: "launch_frame",
+          name: "Ebook Marketplace",
+          url: appUrl,
+          splashImageUrl: `${appUrl}/logo.jpg`,
+          splashBackgroundColor: "#0a0a14",
+        },
+      },
+    }),
   },
 };
 
