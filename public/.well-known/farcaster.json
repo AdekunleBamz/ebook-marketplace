@@ -9,7 +9,7 @@
     "name": "Ebook Marketplace",
     "iconUrl": "https://ebook-mp.vercel.app/logo.jpg",
     "homeUrl": "https://ebook-mp.vercel.app",
-    "imageUrl": "https://ebook-mp.vercel.app/og-image.png",
+    "imageUrl": "https://ebook-mp.vercel.app/logo.jpg",
     "buttonTitle": "Browse Books",
     "splashImageUrl": "https://ebook-mp.vercel.app/logo.jpg",
     "splashBackgroundColor": "#0a0a14",

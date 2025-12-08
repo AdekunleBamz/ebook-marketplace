@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   },
   other: {
     "fc:frame": "vNext",
-    "fc:frame:image": `${appUrl}/og-image.png`,
+    "fc:frame:image": `${appUrl}/logo.jpg`,
     "fc:frame:button:1": "Browse Books",
     "fc:frame:button:1:action": "link",
     "fc:frame:button:1:target": appUrl,
