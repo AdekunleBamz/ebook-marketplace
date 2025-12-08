@@ -63,6 +63,12 @@ export const TOKENS = {
   }
 }
 
+// Marketplace Contract Addresses
+export const MARKETPLACE_CONTRACTS = {
+  base: '0xd81DB230DA69fF31695e2226B74Ee9923248888C',
+  celo: '0xFd0B34202B064cdCAB917Bf9E059536097ED184c'
+}
+
 // Chain IDs
 export const CHAIN_IDS = {
   base: 8453,

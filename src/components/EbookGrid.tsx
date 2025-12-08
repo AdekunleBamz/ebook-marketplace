@@ -4,22 +4,35 @@ import { useMarketplace } from '@/context/MarketplaceContext'
 import EbookCard from './EbookCard'
 import { Ebook, GENRES } from '@/types'
 import { useAppKitAccount, useAppKitNetwork, useAppKit } from '@reown/appkit/react'
-import { TOKENS, CHAIN_IDS } from '@/types'
+import { TOKENS, CHAIN_IDS, MARKETPLACE_CONTRACTS } from '@/types'
 import { useWriteContract, useWaitForTransactionReceipt, useSignMessage } from 'wagmi'
 import { parseUnits } from 'viem'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
-// ERC20 ABI for transfer
+// ERC20 ABI for approve
 const ERC20_ABI = [
   {
-    name: 'transfer',
+    name: 'approve',
     type: 'function',
     stateMutability: 'nonpayable',
     inputs: [
-      { name: 'to', type: 'address' },
+      { name: 'spender', type: 'address' },
       { name: 'amount', type: 'uint256' }
     ],
     outputs: [{ type: 'bool' }]
+  }
+] as const
+
+// Marketplace ABI for purchaseEbook
+const MARKETPLACE_ABI = [
+  {
+    name: 'purchaseEbook',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'ebookId', type: 'string' }
+    ],
+    outputs: []
   }
 ] as const
 
@@ -30,10 +43,40 @@ export default function EbookGrid() {
   const { open } = useAppKit()
   const [purchasingId, setPurchasingId] = useState<string | null>(null)
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
+  const [purchaseStep, setPurchaseStep] = useState<'idle' | 'approving' | 'purchasing'>('idle')
+  const [pendingEbook, setPendingEbook] = useState<Ebook | null>(null)
   const { signMessageAsync } = useSignMessage()
 
-  const { writeContract, data: hash } = useWriteContract()
-  const { isLoading: isConfirming } = useWaitForTransactionReceipt({ hash })
+  const { writeContract, data: hash, reset } = useWriteContract()
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+
+  // Handle transaction success - move to next step or complete
+  useEffect(() => {
+    if (isSuccess && pendingEbook) {
+      if (purchaseStep === 'approving') {
+        // Approval successful, now call purchaseEbook
+        setPurchaseStep('purchasing')
+        const contractAddress = pendingEbook.chain === 'base' 
+          ? MARKETPLACE_CONTRACTS.base 
+          : MARKETPLACE_CONTRACTS.celo
+
+        writeContract({
+          address: contractAddress as `0x${string}`,
+          abi: MARKETPLACE_ABI,
+          functionName: 'purchaseEbook',
+          args: [pendingEbook.id]
+        })
+      } else if (purchaseStep === 'purchasing') {
+        // Purchase complete!
+        alert(`Successfully purchased "${pendingEbook.title}"! You can now download it.`)
+        handleDownload(pendingEbook)
+        setPurchaseStep('idle')
+        setPendingEbook(null)
+        setPurchasingId(null)
+        reset()
+      }
+    }
+  }, [isSuccess, purchaseStep, pendingEbook])
 
   const filteredEbooks = selectedGenre === 'all' 
     ? ebooks 
@@ -104,7 +147,7 @@ By signing, I confirm this download.`
       return
     }
 
-    // Paid ebook - require payment to seller's payment wallet
+    // Paid ebook - require payment through smart contract
     const requiredChainId = ebook.chain === 'base' ? CHAIN_IDS.base : CHAIN_IDS.celo
     if (chainId !== requiredChainId) {
       alert(`Please switch to ${ebook.chain === 'base' ? 'Base' : 'Celo'} network to purchase this ebook`)
@@ -112,28 +155,31 @@ By signing, I confirm this download.`
     }
 
     setPurchasingId(ebook.id)
+    setPendingEbook(ebook)
+    setPurchaseStep('approving')
 
     try {
       const tokenAddress = ebook.chain === 'base' ? TOKENS.base.USDC : TOKENS.celo.cUSD
       const decimals = ebook.chain === 'base' ? TOKENS.base.decimals : TOKENS.celo.decimals
       const amount = parseUnits(ebook.price, decimals)
-      
-      // Use paymentWallet if set, otherwise fall back to seller address
-      const recipientWallet = ebook.paymentWallet || ebook.seller
+      const contractAddress = ebook.chain === 'base' 
+        ? MARKETPLACE_CONTRACTS.base 
+        : MARKETPLACE_CONTRACTS.celo
 
+      // Step 1: Approve the marketplace contract to spend tokens
       writeContract({
         address: tokenAddress as `0x${string}`,
         abi: ERC20_ABI,
-        functionName: 'transfer',
-        args: [recipientWallet as `0x${string}`, amount]
+        functionName: 'approve',
+        args: [contractAddress as `0x${string}`, amount]
       })
 
-      // After successful transaction, allow download
-      // Note: In production, you'd verify the transaction on backend before allowing download
+      // Step 2 happens in useEffect after approval succeeds
     } catch (error) {
       console.error('Purchase error:', error)
       alert('Failed to initiate purchase. Please try again.')
-    } finally {
+      setPurchaseStep('idle')
+      setPendingEbook(null)
       setPurchasingId(null)
     }
   }

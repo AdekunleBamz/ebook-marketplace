@@ -1,12 +1,28 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useMarketplace } from '@/context/MarketplaceContext'
 import { GENRES, Genre } from '@/types'
 import { useAppKitAccount, useAppKitNetwork } from '@reown/appkit/react'
-import { useSignMessage } from 'wagmi'
+import { useSignMessage, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { Upload, FileText, X, CheckCircle, Shield } from 'lucide-react'
-import { CHAIN_IDS, MAX_FILE_SIZE } from '@/types'
+import { CHAIN_IDS, MAX_FILE_SIZE, MARKETPLACE_CONTRACTS, TOKENS } from '@/types'
+import { parseUnits } from 'viem'
+
+// Marketplace ABI for listEbook
+const MARKETPLACE_ABI = [
+  {
+    name: 'listEbook',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'ebookId', type: 'string' },
+      { name: 'paymentToken', type: 'address' },
+      { name: 'price', type: 'uint256' }
+    ],
+    outputs: []
+  }
+] as const
 
 // Helper function to convert file to base64 data URL
 const fileToBase64 = (file: File): Promise<string> => {
@@ -23,6 +39,8 @@ export default function UploadForm() {
   const { isConnected, address } = useAppKitAccount()
   const { chainId } = useAppKitNetwork()
   const { signMessageAsync } = useSignMessage()
+  const { writeContract, data: listingHash, reset: resetListing } = useWriteContract()
+  const { isSuccess: listingSuccess } = useWaitForTransactionReceipt({ hash: listingHash })
   
   const [formData, setFormData] = useState({
     title: '',
@@ -37,11 +55,39 @@ export default function UploadForm() {
   const [coverFile, setCoverFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [isSigning, setIsSigning] = useState(false)
+  const [isListingOnChain, setIsListingOnChain] = useState(false)
   const [uploadSuccess, setUploadSuccess] = useState(false)
   const [error, setError] = useState('')
   const [signature, setSignature] = useState<string | null>(null)
+  const [pendingEbookId, setPendingEbookId] = useState<string | null>(null)
 
   const currentChain = chainId === CHAIN_IDS.base ? 'base' : chainId === CHAIN_IDS.celo ? 'celo' : null
+
+  // Handle successful on-chain listing
+  useEffect(() => {
+    if (listingSuccess && pendingEbookId) {
+      setIsListingOnChain(false)
+      setUploadSuccess(true)
+      setPendingEbookId(null)
+      resetListing()
+      
+      // Reset form
+      setFormData({
+        title: '',
+        author: '',
+        description: '',
+        genre: 'fiction',
+        price: '',
+        isFree: false,
+        paymentWallet: ''
+      })
+      setPdfFile(null)
+      setCoverFile(null)
+      setSignature(null)
+      
+      setTimeout(() => setUploadSuccess(false), 3000)
+    }
+  }, [listingSuccess, pendingEbookId])
 
   const handlePdfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -140,6 +186,35 @@ By signing this message, I confirm that I have the rights to sell this ebook.`
         return
       }
 
+      // For paid ebooks, also list on the smart contract
+      if (!formData.isFree && success) {
+        setIsUploading(false)
+        setIsListingOnChain(true)
+        
+        const contractAddress = currentChain === 'base' 
+          ? MARKETPLACE_CONTRACTS.base 
+          : MARKETPLACE_CONTRACTS.celo
+        const tokenAddress = currentChain === 'base' ? TOKENS.base.USDC : TOKENS.celo.cUSD
+        const decimals = currentChain === 'base' ? TOKENS.base.decimals : TOKENS.celo.decimals
+        const priceInWei = parseUnits(formData.price, decimals)
+        
+        // Get the ebook ID from the database (we need to fetch it)
+        // For now, we'll use a combination of title + timestamp as ID
+        const ebookId = `${formData.title}-${Date.now()}`
+        setPendingEbookId(ebookId)
+        
+        writeContract({
+          address: contractAddress as `0x${string}`,
+          abi: MARKETPLACE_ABI,
+          functionName: 'listEbook',
+          args: [ebookId, tokenAddress as `0x${string}`, priceInWei]
+        })
+        
+        // Success handling is in useEffect
+        return
+      }
+
+      // For free ebooks, just show success
       setUploadSuccess(true)
       setFormData({
         title: '',
