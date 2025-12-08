@@ -39,13 +39,21 @@ export const metadata: Metadata = {
     url: appUrl,
   },
   other: {
-    // Farcaster Frame embed meta tags
-    "fc:frame": "next",
-    "fc:frame:image": `${appUrl}/logo.jpg`,
-    "fc:frame:image:aspect_ratio": "1:1",
-    "fc:frame:button:1": "Open App",
-    "fc:frame:button:1:action": "launch_frame",
-    "fc:frame:button:1:target": appUrl,
+    // Farcaster Frame embed meta tags - using JSON format for v2
+    "fc:frame": JSON.stringify({
+      version: "next",
+      imageUrl: `${appUrl}/logo.jpg`,
+      button: {
+        title: "Open App",
+        action: {
+          type: "launch_frame",
+          name: "Ebook Marketplace",
+          url: appUrl,
+          splashImageUrl: `${appUrl}/logo.jpg`,
+          splashBackgroundColor: "#0a0a14"
+        }
+      }
+    }),
   },
 };
 
