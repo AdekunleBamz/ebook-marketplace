@@ -75,7 +75,7 @@ export default function EbookGrid() {
         args: [ebook.seller as `0x${string}`, amount]
       })
 
-      alert(`Purchase initiated for "${ebook.title}"! Check your wallet to confirm.`)
+      // Transaction will be handled by wallet - user confirms in wallet popup
     } catch (error) {
       console.error('Purchase error:', error)
       alert('Failed to initiate purchase. Please try again.')

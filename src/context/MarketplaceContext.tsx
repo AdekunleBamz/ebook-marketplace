@@ -21,10 +21,26 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
   const [selectedGenre, setSelectedGenre] = useState<Genre | 'all'>('all')
 
   useEffect(() => {
-    // Load from localStorage if available
+    // Clear old demo data and load fresh ebooks
     const stored = localStorage.getItem('ebooks')
-    if (stored) {
-      setEbooks(JSON.parse(stored))
+    const version = localStorage.getItem('ebooks_version')
+    
+    // Version 2: Production release - clear demo data
+    if (version !== '2') {
+      localStorage.removeItem('ebooks')
+      localStorage.setItem('ebooks_version', '2')
+      setEbooks([])
+    } else if (stored) {
+      try {
+        const parsed = JSON.parse(stored)
+        // Filter out any demo ebooks (those with sample seller addresses)
+        const realEbooks = parsed.filter((e: Ebook) => 
+          e.seller && !e.seller.includes('...')
+        )
+        setEbooks(realEbooks)
+      } catch {
+        setEbooks([])
+      }
     }
   }, [])
 
