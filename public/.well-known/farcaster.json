@@ -12,7 +12,6 @@
     "imageUrl": "https://ebook-mp.vercel.app/logo.jpg",
     "buttonTitle": "Browse Books",
     "splashImageUrl": "https://ebook-mp.vercel.app/logo.jpg",
-    "splashBackgroundColor": "#0a0a14",
-    "webhookUrl": ""
+    "splashBackgroundColor": "#0a0a14"
   }
 }
