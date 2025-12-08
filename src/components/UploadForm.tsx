@@ -33,7 +33,8 @@ export default function UploadForm() {
     description: '',
     genre: 'fiction' as Genre,
     price: '',
-    isFree: false
+    isFree: false,
+    paymentWallet: ''
   })
   const [pdfFile, setPdfFile] = useState<File | null>(null)
   const [coverFile, setCoverFile] = useState<File | null>(null)
@@ -132,6 +133,7 @@ By signing this message, I confirm that I have the rights to sell this ebook.`
         coverImage: coverBase64,
         pdfUrl: pdfBase64,
         seller: address || '',
+        paymentWallet: formData.isFree ? '' : formData.paymentWallet,
         isFree: formData.isFree,
         fileSize: pdfFile.size
       })
@@ -148,7 +150,8 @@ By signing this message, I confirm that I have the rights to sell this ebook.`
         description: '',
         genre: 'fiction',
         price: '',
-        isFree: false
+        isFree: false,
+        paymentWallet: ''
       })
       setPdfFile(null)
       setCoverFile(null)
@@ -298,6 +301,36 @@ By signing this message, I confirm that I have the rights to sell this ebook.`
                 placeholder="9.99"
                 required={!formData.isFree}
               />
+            </div>
+          )}
+
+          {/* Payment Wallet */}
+          {!formData.isFree && (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Payment Wallet Address *
+              </label>
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={formData.paymentWallet}
+                  onChange={(e) => setFormData({ ...formData, paymentWallet: e.target.value })}
+                  className="w-full bg-[#0f0f1a] border border-teal-900/50 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-teal-500 font-mono text-sm"
+                  placeholder="0x..."
+                  required={!formData.isFree}
+                />
+                <button
+                  type="button"
+                  onClick={() => address && setFormData({ ...formData, paymentWallet: address })}
+                  className="text-xs text-teal-400 hover:text-teal-300 transition-colors"
+                  disabled={!address}
+                >
+                  Use connected wallet ({address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'not connected'})
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                This wallet will receive payments when buyers purchase your ebook
+              </p>
             </div>
           )}
 

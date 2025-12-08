@@ -3,9 +3,9 @@
 import { useMarketplace } from '@/context/MarketplaceContext'
 import EbookCard from './EbookCard'
 import { Ebook, GENRES } from '@/types'
-import { useAppKitAccount, useAppKitNetwork } from '@reown/appkit/react'
+import { useAppKitAccount, useAppKitNetwork, useAppKit } from '@reown/appkit/react'
 import { TOKENS, CHAIN_IDS } from '@/types'
-import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useWriteContract, useWaitForTransactionReceipt, useSignMessage } from 'wagmi'
 import { parseUnits } from 'viem'
 import { useState } from 'react'
 
@@ -27,7 +27,10 @@ export default function EbookGrid() {
   const { ebooks, selectedGenre, isLoading } = useMarketplace()
   const { isConnected, address } = useAppKitAccount()
   const { chainId } = useAppKitNetwork()
+  const { open } = useAppKit()
   const [purchasingId, setPurchasingId] = useState<string | null>(null)
+  const [downloadingId, setDownloadingId] = useState<string | null>(null)
+  const { signMessageAsync } = useSignMessage()
 
   const { writeContract, data: hash } = useWriteContract()
   const { isLoading: isConfirming } = useWaitForTransactionReceipt({ hash })
@@ -71,18 +74,37 @@ export default function EbookGrid() {
   }
 
   const handlePurchase = async (ebook: Ebook) => {
-    if (ebook.isFree) {
-      // Handle free download
-      handleDownload(ebook)
-      return
-    }
-
+    // Require wallet connection for all downloads
     if (!isConnected) {
-      alert('Please connect your wallet first')
+      open()
       return
     }
 
-    // Check if user is on the correct chain
+    if (ebook.isFree) {
+      // Free ebook - require signature before download
+      setDownloadingId(ebook.id)
+      try {
+        const timestamp = Date.now()
+        const message = `I am downloading "${ebook.title}" by ${ebook.author} from Ebook Marketplace.
+
+Type: Free Download
+Timestamp: ${timestamp}
+Downloader: ${address}
+
+By signing, I confirm this download.`
+
+        await signMessageAsync({ message })
+        handleDownload(ebook)
+      } catch (error) {
+        console.error('Signature error:', error)
+        alert('Download cancelled - signature required')
+      } finally {
+        setDownloadingId(null)
+      }
+      return
+    }
+
+    // Paid ebook - require payment to seller's payment wallet
     const requiredChainId = ebook.chain === 'base' ? CHAIN_IDS.base : CHAIN_IDS.celo
     if (chainId !== requiredChainId) {
       alert(`Please switch to ${ebook.chain === 'base' ? 'Base' : 'Celo'} network to purchase this ebook`)
@@ -95,15 +117,19 @@ export default function EbookGrid() {
       const tokenAddress = ebook.chain === 'base' ? TOKENS.base.USDC : TOKENS.celo.cUSD
       const decimals = ebook.chain === 'base' ? TOKENS.base.decimals : TOKENS.celo.decimals
       const amount = parseUnits(ebook.price, decimals)
+      
+      // Use paymentWallet if set, otherwise fall back to seller address
+      const recipientWallet = ebook.paymentWallet || ebook.seller
 
       writeContract({
         address: tokenAddress as `0x${string}`,
         abi: ERC20_ABI,
         functionName: 'transfer',
-        args: [ebook.seller as `0x${string}`, amount]
+        args: [recipientWallet as `0x${string}`, amount]
       })
 
-      // Transaction will be handled by wallet - user confirms in wallet popup
+      // After successful transaction, allow download
+      // Note: In production, you'd verify the transaction on backend before allowing download
     } catch (error) {
       console.error('Purchase error:', error)
       alert('Failed to initiate purchase. Please try again.')
@@ -133,6 +159,7 @@ export default function EbookGrid() {
               key={ebook.id}
               ebook={ebook}
               onPurchase={handlePurchase}
+              isLoading={purchasingId === ebook.id || downloadingId === ebook.id}
             />
           ))}
         </div>

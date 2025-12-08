@@ -49,6 +49,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
           coverImage: record.cover_image || '',
           pdfUrl: record.pdf_url,
           seller: record.seller,
+          paymentWallet: record.payment_wallet || record.seller,
           isFree: record.is_free,
           fileSize: record.file_size,
           uploadedAt: new Date(record.uploaded_at).getTime()
@@ -99,6 +100,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
         cover_image: ebook.coverImage,
         pdf_url: ebook.pdfUrl,
         seller: ebook.seller,
+        payment_wallet: ebook.paymentWallet || ebook.seller,
         is_free: ebook.isFree,
         file_size: ebook.fileSize,
         uploaded_at: uploadedAt

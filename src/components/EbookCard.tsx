@@ -1,15 +1,15 @@
 'use client'
 
 import { Ebook, TOKENS } from '@/types'
-import { ShoppingCart, Download, Eye } from 'lucide-react'
-import Image from 'next/image'
+import { ShoppingCart, Download, Eye, Loader2 } from 'lucide-react'
 
 interface EbookCardProps {
   ebook: Ebook
   onPurchase: (ebook: Ebook) => void
+  isLoading?: boolean
 }
 
-export default function EbookCard({ ebook, onPurchase }: EbookCardProps) {
+export default function EbookCard({ ebook, onPurchase, isLoading = false }: EbookCardProps) {
   const chainInfo = ebook.chain === 'base' 
     ? { name: 'Base', symbol: TOKENS.base.symbol, color: 'text-blue-400' }
     : { name: 'Celo', symbol: TOKENS.celo.symbol, color: 'text-green-400' }
@@ -83,13 +83,21 @@ export default function EbookCard({ ebook, onPurchase }: EbookCardProps) {
         <div className="flex gap-2">
           <button
             onClick={() => onPurchase(ebook)}
+            disabled={isLoading}
             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-medium transition-all duration-200 ${
-              ebook.isFree
+              isLoading
+                ? 'bg-gray-600 text-gray-300 cursor-wait'
+                : ebook.isFree
                 ? 'bg-green-600 hover:bg-green-500 text-white'
                 : 'bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600 text-white'
             }`}
           >
-            {ebook.isFree ? (
+            {isLoading ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Processing...
+              </>
+            ) : ebook.isFree ? (
               <>
                 <Download size={16} />
                 Download

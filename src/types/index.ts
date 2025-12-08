@@ -9,7 +9,8 @@ export interface Ebook {
   coverImage: string
   pdfUrl: string
   uploadedAt: number
-  seller: string
+  seller: string // Uploader's wallet address
+  paymentWallet: string // Wallet to receive payments (can be different from seller)
   isFree: boolean
   fileSize: number // in bytes
 }
