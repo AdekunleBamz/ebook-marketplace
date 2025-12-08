@@ -85,14 +85,14 @@ export default function EbookGrid() {
   }
 
   return (
-    <div className="flex-1 p-6">
+    <div className="flex-1 p-3 sm:p-6">
       {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+      <div className="mb-4 sm:mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
           <span>{genreIcon}</span>
           {genreTitle}
         </h2>
-        <p className="text-gray-400 text-sm mt-1">
+        <p className="text-gray-400 text-xs sm:text-sm mt-1">
           {filteredEbooks.length} {filteredEbooks.length === 1 ? 'book' : 'books'} available
         </p>
       </div>

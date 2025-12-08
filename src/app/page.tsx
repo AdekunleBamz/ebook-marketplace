@@ -19,7 +19,7 @@ export default function Home() {
 
       <Header />
       
-      <div className="flex relative">
+      <div className="flex flex-col md:flex-row relative">
         <GenreSidebar />
         <EbookGrid />
       </div>

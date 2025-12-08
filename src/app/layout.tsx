@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Web3Provider from "@/context/Web3Provider";
@@ -10,7 +10,15 @@ const inter = Inter({
 });
 
 // Farcaster Frame metadata
-const appUrl = process.env.NEXT_PUBLIC_URL || "https://ebook-marketplace.vercel.app";
+const appUrl = process.env.NEXT_PUBLIC_URL || "https://ebook-mp.vercel.app";
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+};
 
 export const metadata: Metadata = {
   title: "Ebook Marketplace | Buy & Sell Ebooks on Base & Celo",

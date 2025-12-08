@@ -151,33 +151,33 @@ By signing this message, I confirm that I have the rights to sell this ebook.`
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <div className="bg-gradient-to-br from-[#1a1a2e] to-[#0f0f1a] rounded-xl border border-teal-900/30 p-6">
-        <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
-          <Upload className="text-teal-400" />
+    <div className="max-w-2xl mx-auto p-3 sm:p-6">
+      <div className="bg-gradient-to-br from-[#1a1a2e] to-[#0f0f1a] rounded-xl border border-teal-900/30 p-4 sm:p-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 flex items-center gap-2">
+          <Upload className="text-teal-400\" size={20} />
           List Your Ebook
         </h2>
-        <p className="text-gray-400 text-sm mb-6">
+        <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6">
           Share your knowledge with readers on {currentChain === 'base' ? 'Base (USDC)' : currentChain === 'celo' ? 'Celo (cUSD)' : 'Base or Celo'}
         </p>
 
         {!isConnected && (
-          <div className="bg-amber-900/20 border border-amber-500/30 rounded-lg p-4 mb-6">
-            <p className="text-amber-400 text-sm">
+          <div className="bg-amber-900/20 border border-amber-500/30 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+            <p className="text-amber-400 text-xs sm:text-sm">
               ⚠️ Please connect your wallet to list an ebook
             </p>
           </div>
         )}
 
         {uploadSuccess && (
-          <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4 mb-6 flex items-center gap-2">
-            <CheckCircle className="text-green-400" size={20} />
-            <p className="text-green-400">Ebook listed successfully!</p>
+          <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 flex items-center gap-2">
+            <CheckCircle className="text-green-400" size={18} />
+            <p className="text-green-400 text-sm">Ebook listed successfully!</p>
           </div>
         )}
 
         {error && (
-          <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 mb-6">
+          <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
             <p className="text-red-400 text-sm">{error}</p>
           </div>
         )}
