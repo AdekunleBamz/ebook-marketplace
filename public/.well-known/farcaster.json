@@ -7,11 +7,11 @@
   "frame": {
     "version": "1",
     "name": "Ebook Marketplace",
-    "iconUrl": "https://ebook-marketplace.vercel.app/logo.jpg",
-    "homeUrl": "https://ebook-marketplace.vercel.app",
-    "imageUrl": "https://ebook-marketplace.vercel.app/og-image.png",
+    "iconUrl": "https://ebook-marketplace-mzxh5ryuw-phessophissys-projects.vercel.app/logo.jpg",
+    "homeUrl": "https://ebook-marketplace-mzxh5ryuw-phessophissys-projects.vercel.app",
+    "imageUrl": "https://ebook-marketplace-mzxh5ryuw-phessophissys-projects.vercel.app/og-image.png",
     "buttonTitle": "Browse Books",
-    "splashImageUrl": "https://ebook-marketplace.vercel.app/logo.jpg",
+    "splashImageUrl": "https://ebook-marketplace-mzxh5ryuw-phessophissys-projects.vercel.app/logo.jpg",
     "splashBackgroundColor": "#0a0a14",
     "webhookUrl": ""
   }
