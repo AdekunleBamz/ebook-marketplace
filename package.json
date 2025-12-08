@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@farcaster/frame-sdk": "^0.1.12",
     "@reown/appkit": "^1.6.8",
     "@reown/appkit-adapter-wagmi": "^1.6.8",
     "@supabase/supabase-js": "^2.86.2",

@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Web3Provider from "@/context/Web3Provider";
 import { MarketplaceProvider } from "@/context/MarketplaceContext";
+import FarcasterProvider from "@/components/FarcasterProvider";
 import { headers } from "next/headers";
 
 const inter = Inter({
@@ -39,20 +40,12 @@ export const metadata: Metadata = {
   },
   other: {
     // Farcaster Frame embed meta tags
-    "fc:frame": JSON.stringify({
-      version: "next",
-      imageUrl: `${appUrl}/logo.jpg`,
-      button: {
-        title: "Browse Books",
-        action: {
-          type: "launch_frame",
-          name: "Ebook Marketplace",
-          url: appUrl,
-          splashImageUrl: `${appUrl}/logo.jpg`,
-          splashBackgroundColor: "#0a0a14",
-        },
-      },
-    }),
+    "fc:frame": "next",
+    "fc:frame:image": `${appUrl}/logo.jpg`,
+    "fc:frame:image:aspect_ratio": "1:1",
+    "fc:frame:button:1": "Open App",
+    "fc:frame:button:1:action": "launch_frame",
+    "fc:frame:button:1:target": appUrl,
   },
 };
 
@@ -68,11 +61,13 @@ export default function RootLayout({
       <body
         className={`${inter.className} antialiased bg-[#0a0a14] min-h-screen`}
       >
-        <Web3Provider cookies={cookies}>
-          <MarketplaceProvider>
-            {children}
-          </MarketplaceProvider>
-        </Web3Provider>
+        <FarcasterProvider>
+          <Web3Provider cookies={cookies}>
+            <MarketplaceProvider>
+              {children}
+            </MarketplaceProvider>
+          </Web3Provider>
+        </FarcasterProvider>
       </body>
     </html>
   );
