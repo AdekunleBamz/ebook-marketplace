@@ -34,12 +34,11 @@ export default function EbookCard({ ebook, onPurchase }: EbookCardProps) {
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-6xl opacity-50">📕</div>
         </div>
-        {ebook.coverImage && ebook.coverImage !== '/covers/' && (
-          <Image
+        {ebook.coverImage && ebook.coverImage.length > 10 && (
+          <img
             src={ebook.coverImage}
             alt={ebook.title}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
         )}
         

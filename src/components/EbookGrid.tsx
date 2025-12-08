@@ -42,10 +42,27 @@ export default function EbookGrid() {
   const genreTitle = selectedGenre === 'all' ? 'All Books' : currentGenre?.label || 'Books'
   const genreIcon = selectedGenre === 'all' ? '📚' : currentGenre?.icon || '📖'
 
+  const handleDownload = (ebook: Ebook) => {
+    // Check if it's a valid data URL or regular URL
+    if (ebook.pdfUrl.startsWith('data:') || ebook.pdfUrl.startsWith('http')) {
+      // Create a download link
+      const link = document.createElement('a')
+      link.href = ebook.pdfUrl
+      link.download = `${ebook.title}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } else if (ebook.pdfUrl.startsWith('blob:')) {
+      alert('This file is no longer available. The seller needs to re-upload the ebook.')
+    } else {
+      window.open(ebook.pdfUrl, '_blank')
+    }
+  }
+
   const handlePurchase = async (ebook: Ebook) => {
     if (ebook.isFree) {
       // Handle free download
-      window.open(ebook.pdfUrl, '_blank')
+      handleDownload(ebook)
       return
     }
 

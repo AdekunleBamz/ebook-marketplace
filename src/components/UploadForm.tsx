@@ -8,6 +8,16 @@ import { useSignMessage } from 'wagmi'
 import { Upload, FileText, X, CheckCircle, Shield } from 'lucide-react'
 import { CHAIN_IDS } from '@/types'
 
+// Helper function to convert file to base64 data URL
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = error => reject(error)
+  })
+}
+
 export default function UploadForm() {
   const { addEbook } = useMarketplace()
   const { isConnected, address } = useAppKitAccount()
@@ -105,8 +115,9 @@ By signing this message, I confirm that I have the rights to sell this ebook.`
       setIsSigning(false)
       setIsUploading(true)
 
-      // Upload processing
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Convert files to base64 for persistent storage
+      const pdfBase64 = await fileToBase64(pdfFile)
+      const coverBase64 = coverFile ? await fileToBase64(coverFile) : ''
 
       addEbook({
         title: formData.title,
@@ -115,8 +126,8 @@ By signing this message, I confirm that I have the rights to sell this ebook.`
         genre: formData.isFree ? 'free' : formData.genre,
         price: formData.isFree ? '0' : formData.price,
         chain: currentChain,
-        coverImage: coverFile ? URL.createObjectURL(coverFile) : '',
-        pdfUrl: URL.createObjectURL(pdfFile),
+        coverImage: coverBase64,
+        pdfUrl: pdfBase64,
         seller: address || '',
         isFree: formData.isFree,
         fileSize: pdfFile.size
