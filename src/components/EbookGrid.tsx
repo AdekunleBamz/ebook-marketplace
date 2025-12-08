@@ -45,7 +45,7 @@ export default function EbookGrid() {
   const handlePurchase = async (ebook: Ebook) => {
     if (ebook.isFree) {
       // Handle free download
-      alert(`Downloading "${ebook.title}"... (Demo - would download PDF)`)
+      window.open(ebook.pdfUrl, '_blank')
       return
     }
 

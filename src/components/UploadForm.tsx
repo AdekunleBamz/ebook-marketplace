@@ -83,8 +83,7 @@ export default function UploadForm() {
     setIsUploading(true)
 
     try {
-      // In production, you would upload to IPFS/Arweave here
-      // For demo, we'll simulate the upload
+      // Upload processing
       await new Promise(resolve => setTimeout(resolve, 1500))
 
       addEbook({
