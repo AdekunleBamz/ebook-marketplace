@@ -326,4 +326,201 @@ contract EbookMarketplace is Ownable, ReentrancyGuard {
     function calculateFee(uint256 price) external view returns (uint256) {
         return (price * platformFeeBps) / 10000;
     }
+
+    // ============ Bulk Operations ============
+
+    /**
+     * @dev Bulk purchase multiple ebooks in one transaction
+     * @param ebookIds Array of off-chain ebook IDs to purchase
+     * @notice Buyer must approve this contract to spend the total required tokens first
+     * @notice Maximum 10 ebooks per bulk purchase to avoid gas limits
+     */
+    function bulkPurchaseEbooks(string[] calldata ebookIds) external nonReentrant {
+        require(ebookIds.length > 0, "Empty purchase list");
+        require(ebookIds.length <= 10, "Too many ebooks (max 10)");
+
+        uint256 totalCost = 0;
+        address[] memory sellers = new address[](ebookIds.length);
+        address[] memory tokens = new address[](ebookIds.length);
+        uint256[] memory prices = new uint256[](ebookIds.length);
+        uint256[] memory platformFees = new uint256[](ebookIds.length);
+
+        // Calculate total cost and validate all purchases first
+        for (uint256 i = 0; i < ebookIds.length; i++) {
+            bytes32 ebookIdHash = keccak256(abi.encodePacked(ebookIds[i]));
+            Ebook storage ebook = ebooks[ebookIdHash];
+
+            require(ebook.isActive, "Ebook not listed");
+            require(!hasPurchased[msg.sender][ebookIdHash], "Already purchased");
+            require(msg.sender != ebook.seller, "Cannot buy your own ebook");
+
+            uint256 platformFee = (ebook.price * platformFeeBps) / 10000;
+            uint256 sellerAmount = ebook.price - platformFee;
+
+            sellers[i] = ebook.seller;
+            tokens[i] = ebook.paymentToken;
+            prices[i] = ebook.price;
+            platformFees[i] = platformFee;
+
+            totalCost += ebook.price;
+
+            // Validate that all ebooks use the same payment token
+            if (i > 0) {
+                require(tokens[i] == tokens[0], "Mixed payment tokens not allowed");
+            }
+        }
+
+        // Execute all purchases
+        IERC20 paymentToken = IERC20(tokens[0]);
+
+        for (uint256 i = 0; i < ebookIds.length; i++) {
+            bytes32 ebookIdHash = keccak256(abi.encodePacked(ebookIds[i]));
+            Ebook storage ebook = ebooks[ebookIdHash];
+
+            // Transfer payment
+            paymentToken.safeTransferFrom(msg.sender, sellers[i], prices[i] - platformFees[i]);
+
+            if (platformFees[i] > 0) {
+                paymentToken.safeTransferFrom(msg.sender, feeRecipient, platformFees[i]);
+            }
+
+            // Record purchase
+            hasPurchased[msg.sender][ebookIdHash] = true;
+            buyerPurchases[msg.sender].push(ebookIdHash);
+            ebook.totalSales++;
+
+            emit EbookPurchased(
+                ebookIdHash,
+                ebookIds[i],
+                msg.sender,
+                sellers[i],
+                prices[i],
+                platformFees[i]
+            );
+        }
+    }
+
+    /**
+     * @dev Bulk list multiple ebooks in one transaction
+     * @param ebookData Array of ebook listing data
+     * @notice Only callable by owner (admin) for bulk operations
+     */
+    function bulkListEbooks(
+        BulkEbookData[] calldata ebookData
+    ) external onlyOwner {
+        require(ebookData.length > 0, "Empty listing data");
+        require(ebookData.length <= 20, "Too many ebooks (max 20)");
+
+        for (uint256 i = 0; i < ebookData.length; i++) {
+            BulkEbookData memory data = ebookData[i];
+            require(bytes(data.ebookId).length > 0, "Invalid ebook ID");
+            require(acceptedTokens[data.paymentToken], "Token not accepted");
+            require(data.price > 0, "Price must be greater than 0");
+
+            bytes32 ebookIdHash = keccak256(abi.encodePacked(data.ebookId));
+            require(!ebooks[ebookIdHash].isActive, "Ebook already listed");
+
+            ebooks[ebookIdHash] = Ebook({
+                ebookId: data.ebookId,
+                seller: data.seller,
+                paymentToken: data.paymentToken,
+                price: data.price,
+                isActive: true,
+                totalSales: 0
+            });
+
+            allEbookIds.push(ebookIdHash);
+
+            emit EbookListed(
+                ebookIdHash,
+                data.ebookId,
+                data.seller,
+                data.paymentToken,
+                data.price
+            );
+        }
+    }
+
+    /**
+     * @dev Bulk delist multiple ebooks
+     * @param ebookIds Array of off-chain ebook IDs to delist
+     * @notice Can only delist ebooks owned by the caller or by owner
+     */
+    function bulkDelistEbooks(string[] calldata ebookIds) external {
+        require(ebookIds.length > 0, "Empty delist list");
+        require(ebookIds.length <= 20, "Too many ebooks (max 20)");
+
+        for (uint256 i = 0; i < ebookIds.length; i++) {
+            bytes32 ebookIdHash = keccak256(abi.encodePacked(ebookIds[i]));
+            Ebook storage ebook = ebooks[ebookIdHash];
+
+            require(ebook.isActive, "Ebook not listed");
+            require(ebook.seller == msg.sender || msg.sender == owner(), "Not authorized");
+
+            ebook.isActive = false;
+
+            emit EbookDelisted(ebookIdHash, ebookIds[i]);
+        }
+    }
+
+    // ============ Helper Struct ============
+
+    struct BulkEbookData {
+        string ebookId;
+        address seller;
+        address paymentToken;
+        uint256 price;
+    }
+
+    // ============ Bulk Query Functions ============
+
+    /**
+     * @dev Get details for multiple ebooks in one call
+     * @param ebookIds Array of off-chain ebook IDs
+     */
+    function getBulkEbooks(string[] calldata ebookIds) external view returns (
+        address[] memory sellers,
+        address[] memory paymentTokens,
+        uint256[] memory prices,
+        bool[] memory isActive,
+        uint256[] memory totalSales
+    ) {
+        uint256 length = ebookIds.length;
+        sellers = new address[](length);
+        paymentTokens = new address[](length);
+        prices = new uint256[](length);
+        isActive = new bool[](length);
+        totalSales = new uint256[](length);
+
+        for (uint256 i = 0; i < length; i++) {
+            bytes32 ebookIdHash = keccak256(abi.encodePacked(ebookIds[i]));
+            Ebook storage ebook = ebooks[ebookIdHash];
+
+            sellers[i] = ebook.seller;
+            paymentTokens[i] = ebook.paymentToken;
+            prices[i] = ebook.price;
+            isActive[i] = ebook.isActive;
+            totalSales[i] = ebook.totalSales;
+        }
+    }
+
+    /**
+     * @dev Check bulk purchases for a buyer
+     * @param buyer Buyer's address
+     * @param ebookIds Array of off-chain ebook IDs to check
+     */
+    function checkBulkPurchases(
+        address buyer,
+        string[] calldata ebookIds
+    ) external view returns (bool[] memory) {
+        uint256 length = ebookIds.length;
+        bool[] memory purchased = new bool[](length);
+
+        for (uint256 i = 0; i < length; i++) {
+            bytes32 ebookIdHash = keccak256(abi.encodePacked(ebookIds[i]));
+            purchased[i] = hasPurchased[buyer][ebookIdHash];
+        }
+
+        return purchased;
+    }
 }
